@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Shop - NORTHLOOM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;450;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css">
+<script src="/whitelabel.js"></script>
+</head>
+<body data-layout-archetype="editorial-transparency-apparel" data-nav="">
+<div id="siteHeader"></div>
+<main>
+  <div class="page-head"><div class="container">
+    <div class="eyebrow" id="shopEyebrow">Shop</div>
+    <h1 class="display" style="font-size:clamp(36px,5.2vw,80px);margin-top:12px" id="shopTitle">All <em>pieces</em></h1>
+  </div></div>
+  <div class="container shop">
+    <aside class="filters" id="filters" aria-label="Filters">
+      <div style="display:flex;justify-content:space-between;align-items:center" class="filters-head"><b class="filter-close-label" style="display:none">Filters</b><button class="icon-btn filter-close" id="filterClose" aria-label="Close filters" style="display:none">&times;</button></div>
+      <div class="fgroup"><h4>Collection</h4><div class="fopts" id="fCol"></div></div>
+      <div class="fgroup"><h4>Size</h4><div class="fopts" id="fSize"></div></div>
+      <div class="fgroup"><h4>Colour</h4><div class="fopts" id="fColour"></div></div>
+      <div class="fgroup"><h4>Price</h4><div class="fopts" id="fPrice"></div></div>
+      <button class="btn ghost sm" id="fReset" style="margin-top:16px">Clear all filters</button>
+    </aside>
+    <section aria-label="Products">
+      <div class="shop-bar">
+        <button class="btn ghost sm filter-toggle" id="filterOpen">Filters</button>
+        <span id="resCount" role="status"></span>
+        <label class="sr-only" for="sortSel">Sort by</label>
+        <select id="sortSel"><option value="featured">Featured</option><option value="new">Newest</option><option value="plh">Price: low to high</option><option value="phl">Price: high to low</option></select>
+      </div>
+      <div class="grid three" id="grid"></div>
+    </section>
+  </div>
+</main>
+<div id="siteFooter"></div>
+<style>@media(max-width:900px){.filter-close,.filter-close-label{display:inline-flex!important}.filters-head{margin-bottom:8px}}</style>
+<script src="/js/common.js"></script>
+<script src="/js/shop.js"></script>
+</body>
+</html>

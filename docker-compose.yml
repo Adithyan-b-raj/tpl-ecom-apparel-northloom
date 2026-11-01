@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  app:
+    image: medusajs/medusa:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8000"
+    environment:
+      - BRAND_NAME=NORTHLOOM
+      - PRIMARY_COLOR=#1B1A17
+      - SECONDARY_COLOR=#F7F4EE
+      - COD_ENABLED=true
+      - UPI_ENABLED=true
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=bmad
+      - POSTGRES_PASSWORD=bmad_secret
+      - POSTGRES_DB=tpl_ecom_apparel_northloom

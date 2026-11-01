@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Track Order - NORTHLOOM</title>
+<meta name="description" content="Track your NORTHLOOM order in real time. Live courier tracking, status updates, and GST tax invoice download.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;450;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css">
+<script src="/whitelabel.js"></script>
+</head>
+<body data-layout-archetype="editorial-transparency-apparel" data-nav="">
+<div id="siteHeader"></div>
+
+<main class="container narrow" style="padding-block:32px 96px">
+  <div class="crumbs" style="margin-bottom:20px">
+    <a href="/shop.html">Shop</a> <span>/</span> <span>Track order</span>
+  </div>
+
+  <div style="margin-bottom:32px">
+    <div class="eyebrow">Order lookup</div>
+    <h1 class="display" style="font-size:clamp(32px,4.5vw,56px);margin-top:8px">Track your <em>parcel.</em></h1>
+    <p class="muted" style="margin-top:6px">Enter your Order ID and 10-digit mobile number to view live status, courier details, and invoices.</p>
+  </div>
+
+  <!-- Search form -->
+  <form id="trackForm" style="background:var(--sand);padding:24px;border:1px solid var(--rule);margin-bottom:36px" novalidate>
+    <div class="row">
+      <div>
+        <label class="lbl" for="trackOrderId">Order ID *</label>
+        <input type="text" id="trackOrderId" name="id" required placeholder="e.g. NL-261101-ABCD" style="text-transform:uppercase">
+      </div>
+      <div>
+        <label class="lbl" for="trackPhone">Mobile phone (10 digits) *</label>
+        <input type="tel" id="trackPhone" name="phone" required placeholder="9876543210" maxlength="10">
+      </div>
+    </div>
+    <div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+      <button type="submit" class="btn" id="trackSubmitBtn">Track order &rarr;</button>
+      <span class="muted" style="font-size:13px">Need help? WhatsApp us at <a href="https://wa.me/919876543210" class="link">+91 98765 43210</a></span>
+    </div>
+    <div id="trackErr" class="msg bad" style="display:none;margin-top:14px" role="alert"></div>
+  </form>
+
+  <!-- Loading State -->
+  <div id="trackLoading" style="display:none;padding:40px 0;text-align:center">
+    <div class="skeleton" style="height:32px;width:50%;margin:0 auto 16px"></div>
+    <div class="skeleton" style="height:120px;margin-bottom:16px"></div>
+  </div>
+
+  <!-- Order Details Container -->
+  <div id="orderView" style="display:none">
+    <!-- Header with status badge -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;border-bottom:1px solid var(--rule);padding-bottom:20px;margin-bottom:24px">
+      <div>
+        <div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Order Reference</div>
+        <h2 style="font-size:26px;margin:4px 0" id="orderRefTitle">NL-XXXXXX</h2>
+        <div class="muted" style="font-size:13px" id="orderDateText">Placed on ...</div>
+      </div>
+      <div style="text-align:right">
+        <span class="badge" id="orderStatusBadge" style="font-size:14px;padding:6px 14px">STATUS</span>
+        <div style="margin-top:6px;font-size:13px" id="orderPayStatusText">Payment: ...</div>
+      </div>
+    </div>
+
+    <!-- Stepper (Placed -> Confirmed -> Packed -> Shipped -> Delivered) -->
+    <div id="stepperWrapper">
+      <div class="stepper" id="orderStepper">
+        <div id="step-placed">1. Placed</div>
+        <div id="step-confirmed">2. Confirmed</div>
+        <div id="step-packed">3. Packed</div>
+        <div id="step-shipped">4. Shipped</div>
+        <div id="step-delivered">5. Delivered</div>
+      </div>
+    </div>
+
+    <!-- Banner for Cancelled or RTO -->
+    <div id="orderSpecialAlert" style="display:none;background:#fde8e8;border:1px solid #f8b4b4;padding:16px;margin-bottom:24px;border-radius:2px">
+      <b id="specialAlertTitle" style="color:#9b1c1c">Order Cancelled</b>
+      <p id="specialAlertText" style="font-size:14px;color:#771d1d;margin:4px 0 0"></p>
+    </div>
+
+    <!-- Courier info if shipped -->
+    <div id="courierBanner" style="display:none;background:var(--sand);border:1px solid var(--rule);padding:18px 24px;margin-bottom:24px">
+      <div class="eyebrow" style="margin-bottom:4px">Courier Tracking</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+        <div>
+          <span style="font-weight:600" id="courierName">Blue Dart</span> &bull; AWB: <code id="courierAwb" style="background:#fff;padding:2px 6px;border:1px solid var(--rule)">...</code>
+        </div>
+        <a class="btn sm" id="courierTrackLink" href="#" target="_blank" rel="noopener">Track on courier website &rarr;</a>
+      </div>
+    </div>
+
+    <!-- UPI Payment Stage if still pending -->
+    <div id="pendingUpiCard" style="display:none;margin-bottom:28px">
+      <div class="pay-panel">
+        <div>
+          <div class="qr" id="trackQrContainer"></div>
+          <div style="text-align:center;margin-top:8px">
+            <span class="badge">Scan to complete payment</span>
+          </div>
+        </div>
+        <div>
+          <div class="eyebrow">Payment pending</div>
+          <h3 style="font-size:22px;margin:6px 0 12px">Complete your UPI payment</h3>
+          <p style="font-size:14px;color:var(--muted)">Your order stock is reserved for 30 minutes from placement.</p>
+          <dl class="kv" style="margin:16px 0">
+            <dt>Amount</dt><dd id="trackUpiAmount" style="font-weight:600">₹0</dd>
+            <dt>Payee VPA</dt><dd><code id="trackUpiVpa">merchant@upi</code></dd>
+          </dl>
+          <a class="btn block" id="trackUpiIntentBtn" href="#" style="text-align:center;margin-bottom:14px">Open UPI App</a>
+          <div style="border-top:1px solid var(--rule);padding-top:14px">
+            <label class="lbl" for="trackUtrInp">Already paid? Enter 12-digit UTR:</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="trackUtrInp" maxlength="12" placeholder="12-digit UTR" pattern="\d{12}">
+              <button type="button" class="btn" id="trackUtrBtn">Submit UTR</button>
+            </div>
+            <div id="trackUtrMsg" style="font-size:12.5px;margin-top:6px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Line items and delivery card -->
+    <div class="two-col" style="margin-bottom:32px">
+      <div style="grid-column:span 7">
+        <h3 style="font-size:18px;margin-bottom:12px">Items in this order</h3>
+        <div id="orderItemsList"></div>
+      </div>
+
+      <div style="grid-column:span 5">
+        <div style="background:var(--sand);padding:20px;border:1px solid var(--rule);margin-bottom:20px">
+          <h4 style="font-size:15px;margin-bottom:8px">Delivery address</h4>
+          <div id="orderShippingAddr" style="font-size:14px;line-height:1.5"></div>
+        </div>
+
+        <div style="background:var(--sand);padding:20px;border:1px solid var(--rule)">
+          <h4 style="font-size:15px;margin-bottom:8px">Payment summary</h4>
+          <dl class="kv" style="grid-template-columns:1fr auto;gap:8px 0;font-size:14px" id="orderCostBreakdown">
+            <dt>Subtotal</dt><dd id="cSubtotal">₹0</dd>
+            <dt id="cDiscountLabel">Discount</dt><dd id="cDiscount" style="color:var(--ok)">-₹0</dd>
+            <dt>Shipping</dt><dd id="cShipping">Free</dd>
+            <dt id="cCodLabel">COD Fee</dt><dd id="cCodFee">₹49</dd>
+            <dt style="font-weight:600;border-top:1px solid var(--rule);padding-top:8px">Total</dt>
+            <dd style="font-weight:600;border-top:1px solid var(--rule);padding-top:8px" id="cTotal">₹0</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <!-- Events Timeline -->
+    <div style="border-top:1px solid var(--rule);padding-top:28px;margin-bottom:32px">
+      <h3 style="font-size:18px;margin-bottom:16px">Order history &amp; updates</h3>
+      <ul class="timeline" id="orderTimeline"></ul>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      <a class="btn" id="invoiceBtn" href="#" target="_blank">Download Tax Invoice (GST)</a>
+      <a class="btn ghost" href="/shop.html">Continue shopping</a>
+    </div>
+  </div>
+</main>
+
+<div id="siteFooter"></div>
+<script src="/js/common.js"></script>
+<script src="/js/qr.js"></script>
+<script src="/js/track.js"></script>
+</body>
+</html>

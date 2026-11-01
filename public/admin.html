@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Store Admin &amp; Order Ops - NORTHLOOM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;450;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css">
+<script src="/whitelabel.js"></script>
+<style>
+/* Admin Ops Stylesheet */
+:root {
+  --admin-sidebar-w: 240px;
+}
+body { background: #faf9f5; }
+.admin-shell { display: grid; grid-template-columns: var(--admin-sidebar-w) 1fr; min-height: 100vh; }
+.admin-sidebar { background: #1B1A17; color: #f7f4ee; padding: 24px 18px; display: flex; flex-direction: column; justify-content: space-between; position: sticky; top: 0; height: 100vh; }
+.admin-brand { font-family: var(--font-serif); font-size: 20px; font-weight: 500; color: #fff; text-decoration: none; margin-bottom: 24px; display: block; }
+.admin-nav { display: grid; gap: 4px; }
+.admin-nav-btn { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; color: #c8c2b5; border: 0; background: transparent; font-family: inherit; font-size: 13.5px; border-radius: 4px; cursor: pointer; text-align: left; width: 100%; }
+.admin-nav-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
+.admin-nav-btn.active { background: rgba(255,255,255,.16); color: #fff; font-weight: 500; }
+.admin-main { padding: 32px clamp(20px, 4vw, 48px); overflow-y: auto; }
+.admin-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; padding-bottom: 16px; border-bottom: 1px solid var(--rule); flex-wrap: wrap; gap: 14px; }
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+.metric-card { background: #fff; border: 1px solid var(--rule); padding: 20px; border-radius: 2px; }
+.metric-card .val { font-size: 28px; font-weight: 600; margin: 4px 0; font-variant-numeric: tabular-nums; }
+.metric-card .lbl { font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.tbl-wrap { background: #fff; border: 1px solid var(--rule); overflow-x: auto; margin-bottom: 24px; }
+.admin-tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; text-align: left; }
+.admin-tbl th { background: var(--sand); padding: 12px 14px; font-weight: 500; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+.admin-tbl td { padding: 12px 14px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.admin-tbl tr:hover td { background: #fdfcf9; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(27,26,23,.5); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal-card { background: #fff; border: 1px solid var(--color-dark); width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; padding: 28px; position: relative; }
+.modal-card.wide { max-width: 840px; }
+.admin-login-box { max-width: 400px; margin: 80px auto; background: #fff; border: 1px solid var(--rule); padding: 32px; }
+@media (max-width: 900px) {
+  .admin-shell { grid-template-columns: 1fr; }
+  .admin-sidebar { position: static; height: auto; padding: 16px; }
+  .admin-nav { grid-auto-flow: column; overflow-x: auto; }
+}
+</style>
+</head>
+<body data-layout-archetype="apparel-order-ops">
+
+<!-- Unauthenticated Sign In Gate -->
+<div id="loginView" style="display:none">
+  <div class="admin-login-box">
+    <div class="eyebrow">NORTHLOOM OPS</div>
+    <h1 style="font-family:var(--font-serif);font-size:26px;margin:8px 0 16px">Store &amp; Inventory Admin</h1>
+    <p class="muted" style="font-size:13.5px;margin-bottom:20px">Sign in to manage incoming COD orders, verify UPI payments, update stock, and process fulfillments.</p>
+    <form id="adminLoginForm" novalidate>
+      <div style="margin-bottom:16px">
+        <label class="lbl" for="adminPw">Admin password</label>
+        <input type="password" id="adminPw" required placeholder="Enter password" autocomplete="current-password">
+        <div id="demoPwHint" style="font-size:12px;color:var(--muted);margin-top:6px;display:none">Demo password: <code style="background:var(--sand);padding:1px 4px">northloom-demo</code></div>
+      </div>
+      <div id="loginErr" class="msg bad" style="display:none;margin-bottom:14px" role="alert"></div>
+      <button type="submit" class="btn block" id="loginBtn">Sign in &rarr;</button>
+    </form>
+    <div style="margin-top:20px;text-align:center">
+      <a href="/" class="link" style="font-size:13px">&larr; Return to storefront</a>
+    </div>
+  </div>
+</div>
+
+<!-- Authenticated Operations Workspace -->
+<div class="admin-shell" id="adminApp" style="display:none">
+  <!-- Left Navigation Rail -->
+  <aside class="admin-sidebar">
+    <div>
+      <a href="/" class="admin-brand">NORTHLOOM <em>Ops</em></a>
+      <nav class="admin-nav" aria-label="Admin Navigation">
+        <button class="admin-nav-btn active" data-tab="dashboard">Dashboard</button>
+        <button class="admin-nav-btn" data-tab="orders">Orders <span class="badge" id="navOrderCount" style="border-color:#555;color:#ddd;padding:1px 6px">0</span></button>
+        <button class="admin-nav-btn" data-tab="inventory">Inventory <span class="badge warn" id="navLowStockCount" style="display:none;padding:1px 6px">0</span></button>
+        <button class="admin-nav-btn" data-tab="ledger">Stock Ledger</button>
+        <button class="admin-nav-btn" data-tab="coupons">Coupons</button>
+        <button class="admin-nav-btn" data-tab="settings">Settings</button>
+      </nav>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,.12);padding-top:16px">
+      <div style="font-size:12px;color:#888;margin-bottom:10px" id="adminEnvLabel">Cloudflare Edge &bull; D1</div>
+      <a href="/" target="_blank" class="admin-nav-btn" style="padding:6px 0;font-size:13px">View Storefront &nearr;</a>
+      <button type="button" class="admin-nav-btn" id="adminLogoutBtn" style="padding:6px 0;color:#e57373">Sign out</button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="admin-main">
+    <!-- Topbar -->
+    <header class="admin-topbar">
+      <div>
+        <h1 style="font-family:var(--font-serif);font-size:28px;margin:0" id="tabHeaderTitle">Dashboard</h1>
+        <div class="muted" style="font-size:13px" id="tabHeaderSubtitle">Operations overview and real-time order queue</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button type="button" class="btn ghost sm" id="resetDemoBtn" style="display:none">Reset Demo Data</button>
+        <button type="button" class="btn ghost sm" id="refreshBtn">&#8635; Refresh</button>
+      </div>
+    </header>
+
+    <!-- Tab 1: Dashboard -->
+    <section id="tab-dashboard" class="admin-tab-pane">
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="lbl">Today's Revenue</div>
+          <div class="val" id="mTodayRev">₹0</div>
+          <div class="muted" style="font-size:12px" id="mTodayOrders">0 orders today</div>
+        </div>
+        <div class="metric-card" style="border-left:3px solid var(--warn)">
+          <div class="lbl">Pending COD Confirmation</div>
+          <div class="val" id="mPendingCod">0</div>
+          <div class="muted" style="font-size:12px">Calls needed before dispatch</div>
+        </div>
+        <div class="metric-card" style="border-left:3px solid var(--accent)">
+          <div class="lbl">UPI Awaiting UTR Verification</div>
+          <div class="val" id="mUpiAwaiting">0</div>
+          <div class="muted" style="font-size:12px">Check bank/gateway for UTR</div>
+        </div>
+        <div class="metric-card" style="border-left:3px solid var(--ok)">
+          <div class="lbl">Ready to Pack &amp; Ship</div>
+          <div class="val" id="mToPack">0</div>
+          <div class="muted" style="font-size:12px"><span id="mToShip">0</span> ready for dispatch</div>
+        </div>
+        <div class="metric-card" style="border-left:3px solid var(--bad)">
+          <div class="lbl">Inventory Alerts</div>
+          <div class="val" id="mLowStock">0</div>
+          <div class="muted" style="font-size:12px"><span id="mOutOfStock">0</span> variants out of stock</div>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-bottom:32px">
+        <div style="grid-column:span 8">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h3 style="font-size:18px;margin:0">Recent Orders</h3>
+            <button class="link" onclick="window.switchTab('orders')" style="font-size:13px">View all orders &rarr;</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="admin-tbl">
+              <thead><tr><th>Order ID</th><th>Customer</th><th>Total</th><th>Payment</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody id="recentOrdersTbody"><tr><td colspan="6" class="muted" style="text-align:center;padding:24px">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="grid-column:span 4">
+          <h3 style="font-size:18px;margin-bottom:12px">7-Day Sales Performance</h3>
+          <div style="background:#fff;border:1px solid var(--rule);padding:18px" id="salesChartBox">
+            <div id="chartBars" style="display:grid;gap:8px"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Orders -->
+    <section id="tab-orders" class="admin-tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="search" id="orderSearchInp" placeholder="Search ID, customer, phone, AWB, UTR..." style="max-width:320px;font-size:13px">
+          <select id="orderStatusFilter" style="font-size:13px">
+            <option value="">All Statuses</option>
+            <option value="placed">Placed (New)</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="packed">Packed</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="rto">RTO</option>
+            <option value="return_requested">Return Requested</option>
+            <option value="returned">Returned</option>
+          </select>
+          <select id="orderPaymentFilter" style="font-size:13px">
+            <option value="">All Payments</option>
+            <option value="cod">COD</option>
+            <option value="upi">UPI</option>
+            <option value="utr_submitted">UTR Submitted</option>
+            <option value="paid">Paid</option>
+          </select>
+        </div>
+        <div id="orderTotalMatch" class="muted" style="font-size:13px">0 orders</div>
+      </div>
+
+      <div class="tbl-wrap">
+        <table class="admin-tbl">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Units</th>
+              <th>Total</th>
+              <th>Payment</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTbody">
+            <tr><td colspan="8" class="muted" style="text-align:center;padding:24px">Loading orders...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Tab 3: Inventory -->
+    <section id="tab-inventory" class="admin-tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="search" id="invSearchInp" placeholder="Filter SKU or product..." style="max-width:240px;font-size:13px">
+          <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="checkbox" id="invLowOnly"> Low stock only
+          </label>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button type="button" class="btn sm" id="openAdjustStockBtn">+ Adjust Stock</button>
+          <button type="button" class="btn ghost sm" id="openReceiveStockBtn">+ Receive PO</button>
+          <a class="btn ghost sm" href="/api/admin/inventory/export.csv" target="_blank">Export CSV</a>
+        </div>
+      </div>
+
+      <div class="tbl-wrap">
+        <table class="admin-tbl">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Product</th>
+              <th>Colour</th>
+              <th>Size</th>
+              <th style="text-align:right">On Hand</th>
+              <th style="text-align:right">Reserved</th>
+              <th style="text-align:right">Available</th>
+              <th style="text-align:right">Threshold</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="invTbody">
+            <tr><td colspan="10" class="muted" style="text-align:center;padding:24px">Loading inventory...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Tab 4: Stock Ledger -->
+    <section id="tab-ledger" class="admin-tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="muted" style="font-size:13.5px">Immutable audit trail of all variant stock adjustments, order reservations, shipments, and cancellations.</div>
+        <a class="btn ghost sm" href="/api/admin/ledger/export.csv" target="_blank">Export Ledger CSV</a>
+      </div>
+      <div class="tbl-wrap">
+        <table class="admin-tbl">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>SKU</th>
+              <th style="text-align:right">&Delta; On Hand</th>
+              <th style="text-align:right">&Delta; Reserved</th>
+              <th>Reason</th>
+              <th>Order ID</th>
+              <th>Actor</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerTbody">
+            <tr><td colspan="8" class="muted" style="text-align:center;padding:24px">Loading ledger...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Tab 5: Coupons -->
+    <section id="tab-coupons" class="admin-tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="font-size:18px;margin:0">Active Promotional Coupons</h3>
+        <button type="button" class="btn sm" id="openNewCouponBtn">+ Create Coupon</button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="admin-tbl">
+          <thead>
+            <tr><th>Code</th><th>Type</th><th>Value</th><th>Min Subtotal</th><th>Max Uses</th><th>Redeemed</th><th>Status</th><th>Action</th></tr>
+          </thead>
+          <tbody id="couponsTbody">
+            <tr><td colspan="8" class="muted" style="text-align:center;padding:24px">Loading coupons...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Tab 6: Settings -->
+    <section id="tab-settings" class="admin-tab-pane" style="display:none">
+      <form id="settingsForm" style="max-width:680px;background:#fff;border:1px solid var(--rule);padding:28px" novalidate>
+        <h3 style="font-size:18px;margin-bottom:20px">Store &amp; Payment Configuration</h3>
+        <div class="row" style="margin-bottom:14px">
+          <div><label class="lbl" for="sBrand">Brand Name</label><input type="text" id="sBrand" name="brand_name"></div>
+          <div><label class="lbl" for="sVpa">UPI VPA (Payee Address)</label><input type="text" id="sVpa" name="upi_vpa"></div>
+        </div>
+        <div class="row" style="margin-bottom:14px">
+          <div><label class="lbl" for="sMerchant">UPI Merchant Name</label><input type="text" id="sMerchant" name="upi_merchant_name"></div>
+          <div><label class="lbl" for="sFreeShip">Free Shipping Threshold (₹)</label><input type="number" id="sFreeShip" name="free_shipping_threshold"></div>
+        </div>
+        <div class="row" style="margin-bottom:14px">
+          <div><label class="lbl" for="sCodFee">COD Handling Fee (₹)</label><input type="number" id="sCodFee" name="cod_fee"></div>
+          <div><label class="lbl" for="sCodMax">COD Max Order Cap (₹)</label><input type="number" id="sCodMax" name="cod_max_order"></div>
+        </div>
+        <div class="row" style="margin-bottom:20px">
+          <div><label class="lbl" for="sPhone">Support Phone</label><input type="tel" id="sPhone" name="support_phone"></div>
+          <div><label class="lbl" for="sEmail">Support Email</label><input type="email" id="sEmail" name="support_email"></div>
+        </div>
+        <button type="submit" class="btn" id="saveSettingsBtn">Save Settings</button>
+      </form>
+    </section>
+  </main>
+</div>
+
+<!-- Modal: Order Detail & Action Drawer -->
+<div class="modal-overlay" id="orderModal">
+  <div class="modal-card wide">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
+      <div>
+        <div class="eyebrow">ORDER DETAILS</div>
+        <h2 style="font-size:24px;margin:4px 0" id="modOrderId">NL-XXXXXX</h2>
+        <div class="muted" style="font-size:13px" id="modOrderDate">...</div>
+      </div>
+      <button type="button" class="icon-btn" onclick="window.closeModals()" style="font-size:24px">&times;</button>
+    </div>
+
+    <!-- Action Bar -->
+    <div id="modActionBar" style="background:var(--sand);padding:14px;border:1px solid var(--rule);margin-bottom:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <!-- Dynamic action buttons injected here -->
+    </div>
+
+    <!-- Order grid: customer info, payment, items -->
+    <div class="two-col" style="margin-bottom:20px">
+      <div style="grid-column:span 6">
+        <h4 style="font-size:14px;margin-bottom:8px">Customer &amp; Shipping</h4>
+        <div style="font-size:13.5px;line-height:1.5" id="modCustInfo"></div>
+      </div>
+      <div style="grid-column:span 6">
+        <h4 style="font-size:14px;margin-bottom:8px">Payment Status</h4>
+        <div style="font-size:13.5px;line-height:1.5" id="modPayInfo"></div>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <a class="btn ghost sm" id="modSlipLink" href="#" target="_blank">Print Packing Slip</a>
+          <a class="btn ghost sm" id="modInvLink" href="#" target="_blank">Print Tax Invoice</a>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="font-size:14px;margin-bottom:8px">Order Line Items</h4>
+    <div class="tbl-wrap" style="margin-bottom:20px">
+      <table class="admin-tbl" id="modItemsTbl">
+        <thead><tr><th>SKU</th><th>Item</th><th>Colour / Size</th><th>Qty</th><th>Unit Price</th><th>GST %</th><th>Total</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <h4 style="font-size:14px;margin-bottom:8px">Order Event History</h4>
+    <ul class="timeline" id="modEventsList" style="margin-bottom:20px"></ul>
+
+    <!-- Add Note -->
+    <div style="border-top:1px solid var(--rule);padding-top:16px">
+      <label class="lbl" for="modNoteInp">Add internal note to order</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="modNoteInp" placeholder="e.g. Customer verified delivery address via phone">
+        <button type="button" class="btn ghost sm" id="modAddNoteBtn">Add Note</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Adjust Stock -->
+<div class="modal-overlay" id="adjustModal">
+  <div class="modal-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="font-size:18px;margin:0">Adjust Inventory Stock</h3>
+      <button type="button" class="icon-btn" onclick="window.closeModals()">&times;</button>
+    </div>
+    <form id="adjustForm" novalidate>
+      <div style="margin-bottom:12px">
+        <label class="lbl" for="adjSku">Variant SKU</label>
+        <input type="text" id="adjSku" required placeholder="e.g. NL-LNS-SGE-M" style="text-transform:uppercase">
+      </div>
+      <div class="row" style="margin-bottom:12px">
+        <div>
+          <label class="lbl" for="adjDelta">Change (+/- units)</label>
+          <input type="number" id="adjDelta" placeholder="+5 or -2">
+        </div>
+        <div>
+          <label class="lbl" for="adjSetTo">Or Set Total On-Hand</label>
+          <input type="number" id="adjSetTo" placeholder="Exact count">
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <label class="lbl" for="adjReason">Audit Reason *</label>
+        <select id="adjReason" required>
+          <option value="">Select reason</option>
+          <option value="restock">New Stock Inflow</option>
+          <option value="cycle_count">Physical Cycle Count Correction</option>
+          <option value="damaged">Damaged in Warehouse</option>
+          <option value="theft">Lost / Discrepancy</option>
+          <option value="quality_reject">Quality Control Rejection</option>
+        </select>
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="lbl" for="adjNote">Note (optional)</label>
+        <input type="text" id="adjNote" placeholder="e.g. Tiruppur batch 4 received">
+      </div>
+      <button type="submit" class="btn block">Save Stock Adjustment</button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Ship Order (Courier + AWB) -->
+<div class="modal-overlay" id="shipModal">
+  <div class="modal-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="font-size:18px;margin:0">Ship Order &bull; Dispatch Parcel</h3>
+      <button type="button" class="icon-btn" onclick="window.closeModals()">&times;</button>
+    </div>
+    <form id="shipForm" novalidate>
+      <input type="hidden" id="shipOrderId">
+      <div style="margin-bottom:12px">
+        <label class="lbl" for="shipCourier">Courier Partner *</label>
+        <select id="shipCourier" required>
+          <option value="Blue Dart Express">Blue Dart Express</option>
+          <option value="Delhivery">Delhivery</option>
+          <option value="DTDC Express">DTDC Express</option>
+          <option value="Shadowfax">Shadowfax</option>
+          <option value="India Post Speed Post">India Post Speed Post</option>
+        </select>
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="lbl" for="shipAwb">Airway Bill / Tracking AWB *</label>
+        <input type="text" id="shipAwb" required placeholder="e.g. BLD987123456" style="text-transform:uppercase">
+      </div>
+      <button type="submit" class="btn block">Confirm Dispatch &rarr;</button>
+    </form>
+  </div>
+</div>
+
+<div id="adminToast" class="toast" role="status"></div>
+
+<script src="/js/common.js"></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>

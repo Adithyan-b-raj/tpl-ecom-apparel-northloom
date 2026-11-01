@@ -1,0 +1,14 @@
+name = "tpl-ecom-apparel-northloom"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "northloom-db"
+database_id = "77556bd5-5432-40eb-891d-70aeea14bf06"
+
+# Secrets (never commit): ADMIN_PASSWORD, SESSION_SECRET, WEBHOOK_SECRET
+#   wrangler pages secret put ADMIN_PASSWORD --project-name tpl-ecom-apparel-northloom
+# DEMO_MODE=1 prefills the admin password hint and enables "Reset demo data".
+[vars]
+DEMO_MODE = "1"

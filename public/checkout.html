@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checkout - NORTHLOOM</title>
+<meta name="description" content="Secure checkout with Cash on Delivery and UPI. Transparent pricing, free shipping above ₹1,999.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;450;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site.css">
+<script src="/whitelabel.js"></script>
+</head>
+<body data-layout-archetype="editorial-transparency-apparel" data-nav="">
+<div id="siteHeader"></div>
+
+<main class="container">
+  <div class="crumbs" style="padding-top:20px">
+    <a href="/shop.html">Shop</a> <span>/</span> <span>Checkout</span>
+  </div>
+
+  <!-- Empty cart banner -->
+  <div id="emptyCartView" style="display:none;padding:64px 0;text-align:center">
+    <h1 class="h2">Your bag is <em>empty.</em></h1>
+    <p class="muted" style="margin:12px 0 24px">Explore our everyday linen and organic-cotton basics.</p>
+    <a class="btn" href="/shop.html">Shop collection</a>
+  </div>
+
+  <!-- Main checkout grid -->
+  <div class="co" id="checkoutGrid">
+    <section aria-label="Customer and delivery details">
+      <form id="checkoutForm" novalidate>
+        <h2>1. Delivery address</h2>
+        <div class="row" style="margin-bottom:12px">
+          <div>
+            <label class="lbl" for="inpName">Full name *</label>
+            <input type="text" id="inpName" name="customer_name" required placeholder="e.g. Priya Sharma" autocomplete="name">
+          </div>
+          <div>
+            <label class="lbl" for="inpPhone">Mobile phone (10 digits) *</label>
+            <input type="tel" id="inpPhone" name="phone" required placeholder="9876543210" maxlength="10" autocomplete="tel">
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px">
+          <label class="lbl" for="inpEmail">Email address *</label>
+          <input type="email" id="inpEmail" name="email" required placeholder="priya@example.com" autocomplete="email">
+        </div>
+
+        <div style="margin-bottom:12px">
+          <label class="lbl" for="inpAddr1">Street address / Flat / House no. *</label>
+          <input type="text" id="inpAddr1" name="address_line1" required placeholder="House 42, 3rd Cross, Indiranagar" autocomplete="street-address">
+        </div>
+
+        <div style="margin-bottom:12px">
+          <label class="lbl" for="inpAddr2">Landmark / Area (optional)</label>
+          <input type="text" id="inpAddr2" name="address_line2" placeholder="Near BDA Complex">
+        </div>
+
+        <div class="row" style="margin-bottom:12px">
+          <div>
+            <label class="lbl" for="inpPin">Pincode (6 digits) *</label>
+            <input type="text" id="inpPin" name="pincode" required placeholder="560038" maxlength="6" pattern="[1-9][0-9]{5}">
+            <div id="pinStatus" style="font-size:12.5px;margin-top:4px" aria-live="polite"></div>
+          </div>
+          <div>
+            <label class="lbl" for="inpCity">City *</label>
+            <input type="text" id="inpCity" name="city" required placeholder="Bengaluru" autocomplete="address-level2">
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <label class="lbl" for="selState">State / UT *</label>
+          <select id="selState" name="state" required autocomplete="address-level1">
+            <option value="">Select State</option>
+          </select>
+        </div>
+
+        <h2>2. Payment method</h2>
+        <div class="opt on" id="optUpi" data-pay="upi">
+          <input type="radio" id="payUpi" name="payment_method" value="upi" checked>
+          <div>
+            <div class="t">UPI (Google Pay, PhonePe, Paytm, BHIM)</div>
+            <div class="d">Scan dynamic QR code or pay via UPI intent. Instant verification. Zero convenience fee.</div>
+          </div>
+          <span class="badge ok">Fastest</span>
+        </div>
+
+        <div class="opt" id="optCod" data-pay="cod">
+          <input type="radio" id="payCod" name="payment_method" value="cod">
+          <div>
+            <div class="t">Cash on Delivery (COD)</div>
+            <div class="d" id="codDesc">Pay cash at your doorstep. Verified with phone confirmation. ₹49 handling fee applies. Maximum order ₹5,000.</div>
+          </div>
+          <span class="badge" id="codFeeBadge">+₹49</span>
+        </div>
+
+        <div style="margin-top:16px;margin-bottom:20px">
+          <label class="lbl" for="inpNotes">Special delivery instructions (optional)</label>
+          <input type="text" id="inpNotes" name="notes" placeholder="e.g. Leave with security / Ring bell twice">
+        </div>
+
+        <div id="checkoutErr" class="msg bad" style="display:none;margin-bottom:14px" role="alert"></div>
+
+        <button type="submit" class="btn block" id="placeOrderBtn" style="font-size:16px;padding:16px">
+          Place order &bull; <span id="btnTotalText">...</span>
+        </button>
+        <p class="muted" style="font-size:12.5px;text-align:center;margin-top:10px">
+          By placing this order, you agree to our 7-day easy returns policy and fair pricing terms.
+        </p>
+      </form>
+    </section>
+
+    <!-- Sticky Order Summary -->
+    <aside class="summary" aria-label="Order summary">
+      <h3>Order summary</h3>
+      <div id="summaryLines"></div>
+
+      <!-- Coupon box -->
+      <div style="margin:16px 0;display:flex;gap:8px">
+        <input type="text" id="couponInput" placeholder="Coupon code" style="text-transform:uppercase;font-size:13px" aria-label="Coupon code">
+        <button type="button" class="btn ghost sm" id="applyCouponBtn" style="white-space:nowrap">Apply</button>
+      </div>
+      <div id="couponMsg" style="font-size:12px;margin-bottom:12px" aria-live="polite"></div>
+
+      <div style="border-top:1px solid rgba(27,26,23,.15);padding-top:12px;display:grid;gap:6px;font-size:14px">
+        <div style="display:flex;justify-content:space-between"><span>Subtotal</span><span id="sumSubtotal">...</span></div>
+        <div id="discountRow" style="display:none;justify-content:space-between;color:var(--ok)">
+          <span>Discount (<span id="discountCode"></span>)</span><span id="sumDiscount">-₹0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between"><span>Shipping</span><span id="sumShipping">Free</span></div>
+        <div id="codFeeRow" style="display:none;justify-content:space-between"><span>COD handling fee</span><span id="sumCodFee">₹49</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:600;font-size:18px;margin-top:8px;padding-top:10px;border-top:1px solid rgba(27,26,23,.2)">
+          <span>Total</span><span id="sumTotal">...</span>
+        </div>
+      </div>
+
+      <div class="gst-box" id="gstNote">
+        Prices are inclusive of Indian GST (5% on items &le; ₹2,500; 18% on items &gt; ₹2,500).
+      </div>
+    </aside>
+  </div>
+
+  <!-- Post-Order View: UPI QR / COD Confirmation -->
+  <section class="narrow" id="postOrderView" style="display:none;padding:48px 0 96px" aria-label="Order confirmation">
+    <div style="text-align:center;margin-bottom:32px">
+      <div class="eyebrow" id="postEyebrow">Order Placed</div>
+      <h1 class="display" id="postTitle">Thank you, <span id="postCustName">Customer</span></h1>
+      <p class="muted" style="margin-top:8px">Order ID: <b id="postOrderId" style="color:var(--color-dark);letter-spacing:.05em">NL-XXXXXX</b></p>
+    </div>
+
+    <!-- UPI payment stage -->
+    <div id="upiPaymentStage" style="display:none">
+      <div class="pay-panel">
+        <div>
+          <div class="qr" id="qrContainer" aria-label="UPI QR Code">
+            <!-- QR code rendered here -->
+          </div>
+          <div style="text-align:center;margin-top:10px">
+            <span class="badge">Scan with any UPI App</span>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
+            <div>
+              <div class="eyebrow">Amount to pay</div>
+              <div style="font-size:32px;font-weight:600" id="upiAmountText">₹0</div>
+            </div>
+            <div style="text-align:right">
+              <div class="eyebrow">Reservation holds for</div>
+              <div class="timer" id="upiTimer">30:00</div>
+            </div>
+          </div>
+
+          <dl class="kv" style="margin-bottom:16px">
+            <dt>Payee VPA</dt>
+            <dd>
+              <code id="upiVpaText">merchant@upi</code>
+              <button type="button" class="btn ghost sm" id="copyVpaBtn" style="padding:2px 8px;margin-left:6px;font-size:12px">Copy</button>
+            </dd>
+            <dt>Merchant</dt>
+            <dd id="upiMerchantText">NORTHLOOM</dd>
+            <dt>Order Ref</dt>
+            <dd id="upiRefText">NL-XXXXXX</dd>
+          </dl>
+
+          <a class="btn block" id="upiIntentBtn" href="#" style="margin-bottom:16px;text-align:center">Open in UPI App</a>
+
+          <div style="border-top:1px solid var(--rule);padding-top:16px">
+            <div class="lbl" style="margin-bottom:4px">Paid already? Enter 12-digit UPI UTR / Ref Number:</div>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="utrInput" placeholder="e.g. 431209876543" maxlength="12" pattern="\d{12}" aria-label="12-digit UTR number">
+              <button type="button" class="btn" id="submitUtrBtn" style="white-space:nowrap">Submit UTR</button>
+            </div>
+            <div id="utrStatus" style="font-size:12.5px;margin-top:6px" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COD confirmation stage -->
+    <div id="codConfirmStage" style="display:none;background:var(--sand);padding:32px;border:1px solid var(--rule);margin-bottom:28px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <span class="badge ok">Cash on Delivery Confirmed</span>
+        <span style="font-size:13px;color:var(--muted)">Pay at time of delivery</span>
+      </div>
+      <p style="font-size:15px;line-height:1.6">
+        We have received your order. Our team will verify your phone number and ship your parcel within 24-48 hours. Please keep exact cash of <b id="codAmountText">₹0</b> ready when our delivery partner arrives.
+      </p>
+    </div>
+
+    <!-- Order summary card -->
+    <div style="border:1px solid var(--rule);padding:24px;margin-bottom:28px">
+      <h3 style="font-size:18px;margin-bottom:12px">Order details</h3>
+      <div id="postOrderLines"></div>
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;font-weight:600">
+        <span>Total</span><span id="postTotalText">₹0</span>
+      </div>
+      <div style="margin-top:12px;font-size:13px;color:var(--muted)" id="postShippingAddress"></div>
+    </div>
+
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a class="btn" id="trackOrderBtn" href="/track.html">Track your order</a>
+      <a class="btn ghost" id="downloadInvoiceBtn" href="#" target="_blank">Download GST Invoice</a>
+      <a class="btn ghost" href="/shop.html">Continue shopping</a>
+    </div>
+  </section>
+</main>
+
+<div id="siteFooter"></div>
+<script src="/js/common.js"></script>
+<script src="/js/qr.js"></script>
+<script src="/js/checkout.js"></script>
+</body>
+</html>
